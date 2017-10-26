@@ -1,4 +1,4 @@
-## About Kendo
+## About Vuetify
 
 Vuetify Libraries are support vuetify libraries backend in PHP/Laravel
 
