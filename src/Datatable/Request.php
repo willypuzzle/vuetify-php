@@ -134,6 +134,18 @@ class Request
     }
 
     /**
+     * Check if Datatables must uses regular expressions
+     *
+     * @param integer $index
+     * @return string
+     */
+    public function isJson($index)
+    {
+        $columns = $this->estrapolateColumns();
+        return isset($columns[$index]['json']) ? $columns[$index]['json'] : false;
+    }
+
+    /**
      * Get orderable columns
      *
      * @return array
@@ -163,8 +175,17 @@ class Request
 //        }
 
         $orderableJson = $this->estrapolateSort();
+
+        $columns = $this->estrapolateColumns();
+        $column = collect($columns)->filter(function($el) use ($orderableJson){
+            return $el['name'] == $orderableJson['sortBy'];
+        })->first();
+
+
         $orderable[] = [
             'column' => $orderableJson['sortBy'],
+            'json' => $column['json'] ?? false,
+            'fallback' => $column['fallback'] ?? false,
             'direction' => $orderableJson['descending'] == true ? 'desc' : 'asc'
         ];
 

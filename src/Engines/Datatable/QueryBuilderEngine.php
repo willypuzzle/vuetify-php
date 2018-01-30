@@ -3,6 +3,7 @@
 namespace Idsign\Vuetify\Engines\Datatable;
 
 use Closure;
+use Idsign\Vuetify\Datatable\Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Idsign\Helpers\Facades\General\Environment;
@@ -209,13 +211,14 @@ class QueryBuilderEngine extends BaseEngine
                                     $queryBuilder,
                                     $relation,
                                     $relationColumn,
-                                    $keyword
+                                    $keyword,
+                                    $index
                                 );
                             } else {
-                                $this->compileQuerySearch($queryBuilder, $columnName, $keyword);
+                                $this->compileQuerySearch($queryBuilder, $columnName, $keyword, 'or', $index);
                             }
                         } else {
-                            $this->compileQuerySearch($queryBuilder, $columnName, $keyword);
+                            $this->compileQuerySearch($queryBuilder, $columnName, $keyword, 'or', $index);
                         }
                     }
 
@@ -428,7 +431,7 @@ class QueryBuilderEngine extends BaseEngine
      * @param string $column
      * @param string $keyword
      */
-    protected function compileRelationSearch($query, $relation, $column, $keyword)
+    protected function compileRelationSearch($query, $relation, $column, $keyword, $index)
     {
         $myQuery = clone $this->query;
 
@@ -460,13 +463,14 @@ class QueryBuilderEngine extends BaseEngine
                 $relation,
                 $lastRelation,
                 &$relationChunk,
-                &$lastQuery
+                &$lastQuery,
+                $index
             ) {
                 $builder->select($this->connection->raw('count(1)'));
 
                 // We will perform search on last relation only.
                 if ($relation == $lastRelation) {
-                    $this->compileQuerySearch($builder, $column, $keyword, '');
+                    $this->compileQuerySearch($builder, $column, $keyword, '', $index);
                 }
 
                 // Put require object to next step!!
@@ -527,7 +531,25 @@ class QueryBuilderEngine extends BaseEngine
      * @param string $keyword
      * @param string $relation
      */
-    protected function compileQuerySearch($query, $column, $keyword, $relation = 'or')
+    protected function compileQuerySearch($query, $column, $keyword, $relation, $index)
+    {
+        $jsonField = $this->request->isJson($index);
+        if(!$jsonField){
+            $this->compileQueryNormalSearch($query, $column, $keyword, $relation);
+        }else{
+            $this->compileQueryJsonSearch($query, $column, $keyword, $jsonField, $relation, $index);
+        }
+    }
+
+    /**
+     * Compile query builder where clause depending on configurations.
+     *
+     * @param mixed $query
+     * @param string $column
+     * @param string $keyword
+     * @param string $relation
+     */
+    protected function compileQueryNormalSearch($query, $column, $keyword, $relation = 'or')
     {
         $column = $this->addTablePrefix($query, $column);
         $column = $this->castColumn($column);
@@ -538,6 +560,26 @@ class QueryBuilderEngine extends BaseEngine
         }
 
         $query->{$relation . 'WhereRaw'}($sql, [$this->prepareKeyword($keyword)]);
+    }
+
+    protected function compileQueryJsonSearch($query, $column, $keyword, $jsonfield, $relation = 'or', $index)
+    {
+        $columnInput = $this->request->columns()[$index] ?? [];
+
+        $column = $this->addTablePrefix($query, $column);
+        $column = $this->castColumn($column);
+
+        $sql    = $column . '->'.$jsonfield;
+
+
+        if(!$columnInput['fallback'] ?? true){
+            $query->{$relation . 'Where'}($sql, [$this->prepareKeyword($keyword)]);
+        }else{
+            $query->{$relation . 'Where'}(function ($query) use ($sql, $keyword, $columnInput){
+                $query->orWhere($sql, [$this->prepareKeyword($keyword)]);
+                $query->orWhere($columnInput['fallback'], [$this->prepareKeyword($keyword)]);
+            });
+        }
     }
 
     /**
@@ -770,7 +812,7 @@ class QueryBuilderEngine extends BaseEngine
             $column = strstr($column, '(') ? $this->connection->raw($column) : $column;
             $this->regexColumnSearch($column, $keyword);
         } else {
-            $this->compileQuerySearch($this->query, $column, $keyword, '');
+            $this->compileQuerySearch($this->query, $column, $keyword, '', $i);
         }
     }
 
@@ -797,6 +839,7 @@ class QueryBuilderEngine extends BaseEngine
     /**
      * Perform sorting of columns.
      *
+     * @throws Exception
      * @return void
      */
     public function ordering()
@@ -856,14 +899,58 @@ class QueryBuilderEngine extends BaseEngine
                 }
 
                 if ($valid == 1) {
-                    if ($this->nullsLast) {
-                        $this->getQueryBuilder()->orderByRaw($this->getNullsLastSql($column, $orderable['direction']));
-                    } else {
-                        $this->getQueryBuilder()->orderBy($column, $orderable['direction']);
+                    $jsonField = $orderable['json'];
+                    $fallbackField = $orderable['fallback'];
+                    $order = $orderable['direction'];
+                    if($jsonField){
+                        $this->getQueryBuilder()->orderByRaw($this->buildOrderByForJson($column, $jsonField, $fallbackField, $order));
+                    }else{
+                        if ($this->nullsLast) {
+                            $this->getQueryBuilder()->orderByRaw($this->getNullsLastSql($column, $orderable['direction']));
+                        }else{
+                            $this->getQueryBuilder()->orderBy($column, $orderable['direction']);
+                        }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * @param $column
+     * @param $jsonField
+     * @param $fallbackField
+     * @param $order
+     * @return string
+     * @throws Exception
+     */
+    protected function buildOrderByForJson($column, $jsonField, $fallbackField, $order)
+    {
+        if ($this->database == 'mysql') {
+            $column = DB::connection()->getPdo()->quote($column);
+            $jsonField = DB::connection()->getPdo()->quote($jsonField);
+            $fallbackField = DB::connection()->getPdo()->quote($fallbackField);
+            $order = DB::connection()->getPdo()->quote($order);
+            if($fallbackField){
+                $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}, {$fallbackField} {$order}";
+            }else{
+                $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}";
+            }
+        }else if($this->database == 'pgsql'){
+            $column = pg_escape_identifier($column);
+            $jsonField = pg_escape_identifier($jsonField);
+            $order = pg_escape_identifier($order);
+            if($fallbackField){
+                $fallbackField = pg_escape_identifier($fallbackField);
+                $orderByClause = "{$column}->>'{$jsonField}' {$order}, {$fallbackField} {$order}";
+            }else{
+                $orderByClause = "{$column}->>'{$jsonField}' {$order}";
+            }
+        }else{
+            throw new Exception($this->database." is Unknown for this kind of operation.");
+        }
+
+        return $orderByClause;
     }
 
     /**
