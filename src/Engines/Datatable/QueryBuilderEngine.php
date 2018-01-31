@@ -573,11 +573,11 @@ class QueryBuilderEngine extends BaseEngine
 
 
         if(!$columnInput['fallback'] ?? true){
-            $query->{$relation . 'Where'}($sql, [$this->prepareKeyword($keyword)]);
+            $query->{$relation . 'Where'}($sql, 'like', $this->prepareKeyword($keyword));
         }else{
             $query->{$relation . 'Where'}(function ($query) use ($sql, $keyword, $columnInput){
-                $query->orWhere($sql, $this->prepareKeyword($keyword));
-                $query->orWhere($columnInput['fallback'], $this->prepareKeyword($keyword));
+                $query->orWhere($sql, 'like', $this->prepareKeyword($keyword));
+                $query->orWhere($columnInput['fallback'], 'like', $this->prepareKeyword($keyword));
             });
         }
     }
