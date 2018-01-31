@@ -569,8 +569,11 @@ class QueryBuilderEngine extends BaseEngine
         $column = $this->addTablePrefix($query, $column, true);
         //$column = $this->castColumn($column);
 
-        $sql    = $column . '->'.$jsonfield;
+        $column = $this->castColumn($column . '->'.$jsonfield);
 
+        if ($this->isCaseInsensitive()) {
+            $sql = 'LOWER(' . $column . ') LIKE ?';
+        }
 
         if(!$columnInput['fallback'] ?? true){
             $query->{$relation . 'Where'}($sql, 'like', $this->prepareKeyword($keyword));
