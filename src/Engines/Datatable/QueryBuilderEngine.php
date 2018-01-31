@@ -562,6 +562,15 @@ class QueryBuilderEngine extends BaseEngine
         $query->{$relation . 'WhereRaw'}($sql, [$this->prepareKeyword($keyword)]);
     }
 
+    /**
+     * @param $query
+     * @param $column
+     * @param $keyword
+     * @param $jsonfield
+     * @param string $relation
+     * @param $index
+     * @throws Exception
+     */
     protected function compileQueryJsonSearch($query, $column, $keyword, $jsonfield, $relation = 'or', $index)
     {
         $columnInput = $this->request->columns()[$index] ?? [];
@@ -569,19 +578,41 @@ class QueryBuilderEngine extends BaseEngine
         $column = $this->addTablePrefix($query, $column, true);
         //$column = $this->castColumn($column);
 
-        $column = $this->castColumn($column . '->'.$jsonfield);
+        $column = $this->castColumn($this->grammatizeJsonField($column . '->'.$jsonfield));
 
         if ($this->isCaseInsensitive()) {
             $sql = 'LOWER(' . $column . ') LIKE ?';
         }
 
         if(!$columnInput['fallback'] ?? true){
-            $query->{$relation . 'Where'}($sql, 'like', $this->prepareKeyword($keyword));
+            $query->{$relation . 'WhereRaw'}($sql, [$this->prepareKeyword($keyword)]);
         }else{
-            $query->{$relation . 'Where'}(function ($query) use ($sql, $keyword, $columnInput){
-                $query->orWhere($sql, 'like', $this->prepareKeyword($keyword));
-                $query->orWhere($columnInput['fallback'], 'like', $this->prepareKeyword($keyword));
-            });
+            $columnFallback = $this->castColumn($columnInput['fallback']);
+            if ($this->isCaseInsensitive()) {
+                $fallbackSql = 'LOWER(' . $columnFallback . ') LIKE ?';
+            }
+            $query->{$relation . 'WhereRaw'}($sql.' or '.$fallbackSql, [$this->prepareKeyword($keyword), $this->prepareKeyword($keyword)]);
+        }
+    }
+
+    /**
+     * @param $field
+     * @return string
+     * @throws Exception
+     */
+    protected function grammatizeJsonField($field)
+    {
+        $fields = explode('->', $field);
+
+        $column = $this->wrap($fields[0]);
+        if ($this->database == 'mysql') {
+            $jsonField = $this->quote("$.{$fields[1]}");
+            return "{$column}->{$jsonField}";
+        }else if($this->database == 'pgsql'){
+            $jsonField = $this->quote($fields[1]);
+            return "{$column}->>{$jsonField}";
+        }else{
+            throw new Exception($this->database." is Unknown for this kind of operation.");
         }
     }
 
@@ -622,9 +653,9 @@ class QueryBuilderEngine extends BaseEngine
     protected function castColumn($column)
     {
         if ($this->database === 'pgsql') {
-            $column = 'CAST(' . $column . ' as TEXT)';
+            $column = 'CAST(' . $this->wrap($column) . ' as TEXT)';
         } elseif ($this->database === 'firebird') {
-            $column = 'CAST(' . $column . ' as VARCHAR(255))';
+            $column = 'CAST(' . $this->wrap($column) . ' as VARCHAR(255))';
         }
 
         return $column;
@@ -929,25 +960,13 @@ class QueryBuilderEngine extends BaseEngine
      */
     protected function buildOrderByForJson($column, $jsonField, $fallbackField, $order)
     {
-        $column = $this->wrap($column);
-        $fallbackField = $this->wrap($fallbackField);
         $order = $order === 'asc' ? 'asc' : 'desc';
-        if ($this->database == 'mysql') {
-            $jsonField = $this->quote("$.{$jsonField}");
-            if($fallbackField){
-                $orderByClause = "{$column}->{$jsonField} {$order}, {$fallbackField} {$order}";
-            }else{
-                $orderByClause = "{$column}->{$jsonField} {$order}";
-            }
-        }else if($this->database == 'pgsql'){
-            $jsonField = $this->quote($jsonField);
-            if($fallbackField){
-                $orderByClause = "{$column}->>{$jsonField} {$order}, {$fallbackField} {$order}";
-            }else{
-                $orderByClause = "{$column}->>{$jsonField} {$order}";
-            }
+
+        if($fallbackField){
+            $fallbackField = $this->wrap($fallbackField);
+            $orderByClause = $this->grammatizeJsonField("{$column}->{$jsonField}")." {$order}, {$fallbackField} {$order}";
         }else{
-            throw new Exception($this->database." is Unknown for this kind of operation.");
+            $orderByClause = $this->grammatizeJsonField("{$column}->{$jsonField}")." {$order}";
         }
 
         return $orderByClause;
