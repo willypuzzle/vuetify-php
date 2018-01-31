@@ -928,26 +928,31 @@ class QueryBuilderEngine extends BaseEngine
     {
         $column = $this->wrap($column);
         $fallbackField = $this->wrap($fallbackField);
-        $order = $this->wrap($order);
+        $order = $order === 'asc' ? 'asc' : 'desc';
         if ($this->database == 'mysql') {
-            $jsonField = $this->wrap("$.{$jsonField}");
+            $jsonField = $this->quote("$.{$jsonField}");
             if($fallbackField){
                 $orderByClause = "{$column}->{$jsonField} {$order}, {$fallbackField} {$order}";
             }else{
                 $orderByClause = "{$column}->{$jsonField} {$order}";
             }
         }else if($this->database == 'pgsql'){
-            $jsonField = $this->wrap($jsonField);
+            $jsonField = $this->quote($jsonField);
             if($fallbackField){
-                $orderByClause = "{$column}->>'{$jsonField}' {$order}, {$fallbackField} {$order}";
+                $orderByClause = "{$column}->>{$jsonField} {$order}, {$fallbackField} {$order}";
             }else{
-                $orderByClause = "{$column}->>'{$jsonField}' {$order}";
+                $orderByClause = "{$column}->>{$jsonField} {$order}";
             }
         }else{
             throw new Exception($this->database." is Unknown for this kind of operation.");
         }
 
         return $orderByClause;
+    }
+
+    protected function quote($data)
+    {
+        return $this->connection->getPdo()->quote($data);
     }
 
     /**
