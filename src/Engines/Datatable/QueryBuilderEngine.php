@@ -653,9 +653,9 @@ class QueryBuilderEngine extends BaseEngine
     protected function castColumn($column)
     {
         if ($this->database === 'pgsql') {
-            $column = 'CAST(' . $this->wrap($column) . ' as TEXT)';
+            $column = 'CAST(' . $column . ' as TEXT)';
         } elseif ($this->database === 'firebird') {
-            $column = 'CAST(' . $this->wrap($column) . ' as VARCHAR(255))';
+            $column = 'CAST(' . $column . ' as VARCHAR(255))';
         }
 
         return $column;
