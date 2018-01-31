@@ -927,16 +927,17 @@ class QueryBuilderEngine extends BaseEngine
     protected function buildOrderByForJson($column, $jsonField, $fallbackField, $order)
     {
         $column = $this->wrap($column);
-        $jsonField = $this->wrap($jsonField);
         $fallbackField = $this->wrap($fallbackField);
         $order = $this->wrap($order);
         if ($this->database == 'mysql') {
+            $jsonField = $this->wrap("$.{$jsonField}");
             if($fallbackField){
-                $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}, {$fallbackField} {$order}";
+                $orderByClause = "{$column}->{$jsonField} {$order}, {$fallbackField} {$order}";
             }else{
-                $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}";
+                $orderByClause = "{$column}->{$jsonField} {$order}";
             }
         }else if($this->database == 'pgsql'){
+            $jsonField = $this->wrap($jsonField);
             if($fallbackField){
                 $fallbackField = pg_escape_identifier($fallbackField);
                 $orderByClause = "{$column}->>'{$jsonField}' {$order}, {$fallbackField} {$order}";
