@@ -567,7 +567,7 @@ class QueryBuilderEngine extends BaseEngine
         $columnInput = $this->request->columns()[$index] ?? [];
 
         $column = $this->addTablePrefix($query, $column);
-        $column = $this->castColumn($column);
+        //$column = $this->castColumn($column);
 
         $sql    = $column . '->'.$jsonfield;
 
