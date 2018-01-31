@@ -939,7 +939,6 @@ class QueryBuilderEngine extends BaseEngine
         }else if($this->database == 'pgsql'){
             $jsonField = $this->wrap($jsonField);
             if($fallbackField){
-                $fallbackField = pg_escape_identifier($fallbackField);
                 $orderByClause = "{$column}->>'{$jsonField}' {$order}, {$fallbackField} {$order}";
             }else{
                 $orderByClause = "{$column}->>'{$jsonField}' {$order}";
