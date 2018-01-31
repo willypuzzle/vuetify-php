@@ -566,7 +566,7 @@ class QueryBuilderEngine extends BaseEngine
     {
         $columnInput = $this->request->columns()[$index] ?? [];
 
-        $column = $this->addTablePrefix($query, $column);
+        $column = $this->addTablePrefix($query, $column, true);
         //$column = $this->castColumn($column);
 
         $sql    = $column . '->'.$jsonfield;
@@ -590,7 +590,7 @@ class QueryBuilderEngine extends BaseEngine
      * @param string $column
      * @return string
      */
-    protected function addTablePrefix($query, $column)
+    protected function addTablePrefix($query, $column, $nowrap = false)
     {
         // Check if field does not have a table prefix
         if (strpos($column, '.') === false) {
@@ -607,7 +607,7 @@ class QueryBuilderEngine extends BaseEngine
             }
         }
 
-        return $this->wrap($column);
+        return $nowrap ? $column : $this->wrap($column);
     }
 
     /**
@@ -926,20 +926,17 @@ class QueryBuilderEngine extends BaseEngine
      */
     protected function buildOrderByForJson($column, $jsonField, $fallbackField, $order)
     {
+        $column = $this->wrap($column);
+        $jsonField = $this->wrap($jsonField);
+        $fallbackField = $this->wrap($fallbackField);
+        $order = $this->wrap($order);
         if ($this->database == 'mysql') {
-            $column = DB::connection()->getPdo()->quote($column);
-            $jsonField = DB::connection()->getPdo()->quote($jsonField);
-            $fallbackField = DB::connection()->getPdo()->quote($fallbackField);
-            $order = DB::connection()->getPdo()->quote($order);
             if($fallbackField){
                 $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}, {$fallbackField} {$order}";
             }else{
                 $orderByClause = "JSON_EXTRACT({$column}, '$.{$jsonField}' {$order}";
             }
         }else if($this->database == 'pgsql'){
-            $column = pg_escape_identifier($column);
-            $jsonField = pg_escape_identifier($jsonField);
-            $order = pg_escape_identifier($order);
             if($fallbackField){
                 $fallbackField = pg_escape_identifier($fallbackField);
                 $orderByClause = "{$column}->>'{$jsonField}' {$order}, {$fallbackField} {$order}";
