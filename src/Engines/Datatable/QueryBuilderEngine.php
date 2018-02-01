@@ -587,7 +587,7 @@ class QueryBuilderEngine extends BaseEngine
         if(!$columnInput['fallback'] ?? true){
             $query->{$relation . 'WhereRaw'}($sql, [$this->prepareKeyword($keyword)]);
         }else{
-            $columnFallback = $this->castColumn($columnInput['fallback']);
+            $columnFallback = $this->castColumn($this->wrap($columnInput['fallback']));
             if ($this->isCaseInsensitive()) {
                 $fallbackSql = 'LOWER(' . $columnFallback . ') LIKE ?';
             }
