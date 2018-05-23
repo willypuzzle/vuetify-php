@@ -178,7 +178,7 @@ class Request
 
         $columns = $this->estrapolateColumns();
         $column = collect($columns)->filter(function($el) use ($orderableJson){
-            return $el['name'] == $orderableJson['sortBy'];
+            return $el['name'] == $orderableJson['sortBy'] && $el['json'] == $orderableJson['sortByJson'];
         })->first();
 
 
