@@ -609,8 +609,9 @@ class QueryBuilderEngine extends BaseEngine
             $jsonField = $this->quote("$.{$fields[1]}");
             return "{$column}->{$jsonField}";
         }else if($this->database == 'pgsql'){
-            $jsonField = $this->quote($fields[1]);
-            return "{$column}->>{$jsonField}";
+            $jsonField = implode(',', explode('.', $fields[1]));
+            $jsonField = $this->quote("{{$jsonField}}");
+            return "{$column}#>>{$jsonField}";
         }else{
             throw new Exception($this->database." is Unknown for this kind of operation.");
         }
