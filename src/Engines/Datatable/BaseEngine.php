@@ -49,7 +49,7 @@ abstract class BaseEngine implements KendoGridEngineContract
     protected $builder;
 
     /**
-     * @var \Illuminate\Contracts\Logging\Log
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
@@ -702,7 +702,7 @@ abstract class BaseEngine implements KendoGridEngineContract
     /**
      * Get monolog/logger instance.
      *
-     * @return \Illuminate\Contracts\Logging\Log
+     * @return \Psr\Log\LoggerInterface
      */
     public function getLogger()
     {
@@ -714,7 +714,7 @@ abstract class BaseEngine implements KendoGridEngineContract
     /**
      * Set monolog/logger instance.
      *
-     * @param \Illuminate\Contracts\Logging\Log $logger
+     * @param \Psr\Log\LoggerInterface $logger
      * @return $this
      */
     public function setLogger(Log $logger)
