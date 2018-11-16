@@ -2,7 +2,7 @@
 
 namespace Idsign\Vuetify\Engines\Datatable;
 
-use Illuminate\Contracts\Logging\Log;
+use Psr\Log\LoggerInterface as Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use League\Fractal\Resource\Collection;
