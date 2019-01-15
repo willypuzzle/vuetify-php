@@ -201,7 +201,7 @@ class Request
     {
         $sortJson = $this->estrapolateSort();
         //return $this->request->input('order') && count($this->request->input('order')) > 0;
-        return $sortJson && $sortJson['sortBy'] != '';
+        return $sortJson && isset($sortJson['sortBy']) && $sortJson['sortBy'] != '';
     }
 
     /**
