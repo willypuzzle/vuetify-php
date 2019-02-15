@@ -286,6 +286,13 @@ class Request
         return isset($column['name']) && $column['name'] <> '' ? $column['name'] : $column['data'];
     }
 
+    public function columnNameForSearch($i)
+    {
+        $column = $this->estrapolateColumns()[$i];
+
+        return isset($column['search']) && isset($column['search']['name']) ? $column['search']['name'] : $this->columnName($i);
+    }
+
     /**
      * Check if Datatables allow pagination.
      *

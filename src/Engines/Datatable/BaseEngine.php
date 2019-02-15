@@ -961,9 +961,9 @@ abstract class BaseEngine implements KendoGridEngineContract
      * @param bool $wantsAlias
      * @return string
      */
-    protected function getColumnName($index, $wantsAlias = false)
+    protected function getColumnName($index, $wantsAlias = false, $forSearch = false)
     {
-        $column = $this->request->columnName($index);
+        $column = !$forSearch ? $this->request->columnName($index) : $this->request->columnNameForSearch($index);
 
         // DataTables is using make(false)
         if (is_numeric($column)) {

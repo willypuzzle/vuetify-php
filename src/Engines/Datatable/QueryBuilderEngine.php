@@ -173,7 +173,7 @@ class QueryBuilderEngine extends BaseEngine
                 $queryBuilder = $this->getQueryBuilder($query);
 
                 foreach ($this->request->searchableColumnIndex() as $index) {
-                    $columnName = $this->getColumnName($index);
+                    $columnName = $this->getColumnName($index, false, true);
                     if ($this->isBlacklisted($columnName) && ! $this->hasCustomFilter($columnName)) {
                         continue;
                     }
