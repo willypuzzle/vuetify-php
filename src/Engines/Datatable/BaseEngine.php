@@ -501,10 +501,11 @@ abstract class BaseEngine implements KendoGridEngineContract
      *
      * @param bool $mDataSupport
      * @param bool $orderFirst
+     * @param bool $customize
      * @return \Illuminate\Http\JsonResponse
-     * @throws \Exception
+     * @throws Exception
      */
-    public function make($mDataSupport = false, $orderFirst = false)
+    public function make($mDataSupport = false, $orderFirst = false, $customize = false)
     {
         try {
             $this->filterRecords();
@@ -516,7 +517,7 @@ abstract class BaseEngine implements KendoGridEngineContract
                 $this->paginate();
             }
 
-            return $this->render($mDataSupport);
+            return $this->render($mDataSupport, $customize);
         } catch (\Exception $exception) {
             $error = config('vuetify_datatable.error');
             if ($error === 'throw') {
@@ -583,10 +584,17 @@ abstract class BaseEngine implements KendoGridEngineContract
      * Render json response.
      *
      * @param bool $object
+     * @param $resourceCallback
      * @return \Illuminate\Http\JsonResponse
+     * @throws \ReflectionException
      */
-    protected function render($object = false)
+    protected function render($object, $resourceCallback)
     {
+        if (!$resourceCallback) {
+            $resourceCallback = function ($data) {
+                return $data;
+            };
+        }
         $output = array_merge([
             'draw' => (int) $this->request->input('draw'),
             'recordsTotal' => $this->totalRecords,
@@ -625,7 +633,9 @@ abstract class BaseEngine implements KendoGridEngineContract
         if ($this->isDebugging()) {
             $output = $this->showDebugger($output);
         }
-
+        if ($resourceCallback) {
+            $output['data'] = $resourceCallback($output['data']);
+        }
         return new JsonResponse($output, 200, config('vuetify_datatable.json.header', []), config('vuetify_datatable.json.options', 0));
     }
 

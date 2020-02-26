@@ -77,11 +77,13 @@ class QueryBuilderEngine extends BaseEngine
      *
      * @param bool $mDataSupport
      * @param bool $orderFirst
+     * @param bool $customize
      * @return \Illuminate\Http\JsonResponse
+     * @throws \Exception
      */
-    public function make($mDataSupport = false, $orderFirst = false)
+    public function make($mDataSupport = false, $orderFirst = false, $customize = false)
     {
-        return parent::make($mDataSupport, $orderFirst);
+        return parent::make($mDataSupport, $orderFirst, $customize);
     }
 
     /**
