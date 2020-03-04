@@ -1011,7 +1011,7 @@ class QueryBuilderEngine extends BaseEngine
     public function paging()
     {
         $start = (((int)$this->request->page()) - 1) * ((int) $this->request->pageSize());
-        $length = (int) $this->request->pageSize() > 0 ? $this->request->pageSize() : 10;
+        $length = (int) $this->request->pageSize() > 0 ? $this->request->pageSize() : 10000;
         $this->query->skip($start)
                     ->take($length);
     }
