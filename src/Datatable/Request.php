@@ -109,15 +109,15 @@ class Request
     }
 
     private function estrapolateSearch(){
-        return is_array($this->request->input('search')) ? $this->request->input('search') : json_decode($this->request->input('search'), true) ? json_decode($this->request->input('search'), true) : [];
+        return is_array($this->request->input('search')) ? $this->request->input('search') : (json_decode($this->request->input('search'), true) ? json_decode($this->request->input('search'), true) : []);
     }
 
     private function estrapolateColumns(){
-        return is_array($this->request->input('columns')) ? $this->request->input('columns') :json_decode($this->request->input('columns'), true) ? json_decode($this->request->input('columns'), true) : [];
+        return is_array($this->request->input('columns')) ? $this->request->input('columns') : (json_decode($this->request->input('columns'), true) ? json_decode($this->request->input('columns'), true) : []);
     }
 
     private function estrapolateSort(){
-        return is_array($this->request->input('sort')) ? $this->request->input('sort') : json_decode($this->request->input('sort'), true) ? json_decode($this->request->input('sort'), true) : [];
+        return is_array($this->request->input('sort')) ? $this->request->input('sort') : (json_decode($this->request->input('sort'), true) ? json_decode($this->request->input('sort'), true) : []);
     }
 
     /**
