@@ -2,7 +2,6 @@
 
 namespace Idsign\Vuetify\Engines\Datatable;
 
-use Illuminate\Contracts\Logging\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use League\Fractal\Resource\Collection;
@@ -10,6 +9,7 @@ use Idsign\Vuetify\Datatable\Contracts\KendoGridEngineContract;
 use Idsign\Vuetify\Datatable\Exception;
 use Idsign\Vuetify\Datatable\Helper;
 use Idsign\Vuetify\Datatable\Processors\DataProcessor;
+use Psr\Log\LoggerInterface;
 
 /**
  * Class BaseEngine.
@@ -49,7 +49,7 @@ abstract class BaseEngine implements KendoGridEngineContract
     protected $builder;
 
     /**
-     * @var \Illuminate\Contracts\Logging\Log
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
@@ -702,11 +702,11 @@ abstract class BaseEngine implements KendoGridEngineContract
     /**
      * Get monolog/logger instance.
      *
-     * @return \Illuminate\Contracts\Logging\Log
+     * @return \Psr\Log\LoggerInterface
      */
     public function getLogger()
     {
-        $this->logger = $this->logger ?: resolve(Log::class);
+        $this->logger = $this->logger ?: resolve(LoggerInterface::class);
 
         return $this->logger;
     }
@@ -714,10 +714,10 @@ abstract class BaseEngine implements KendoGridEngineContract
     /**
      * Set monolog/logger instance.
      *
-     * @param \Illuminate\Contracts\Logging\Log $logger
+     * @param \Psr\Log\LoggerInterface $logger
      * @return $this
      */
-    public function setLogger(Log $logger)
+    public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
 
