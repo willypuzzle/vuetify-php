@@ -573,7 +573,7 @@ class QueryBuilderEngine extends BaseEngine
      * @param $index
      * @throws Exception
      */
-    protected function compileQueryJsonSearch($query, $column, $keyword, $jsonfield, $relation = 'or', $index)
+    protected function compileQueryJsonSearch($query, $column, $keyword, $jsonfield, $relation = 'or', $index = 0)
     {
         $columnInput = $this->request->columns()[$index] ?? [];
 
